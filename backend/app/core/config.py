@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     twilio_auth_token: str | None = None
     twilio_from_number: str | None = None
 
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    google_redirect_uri: str = "http://localhost:8000/api/integrations/google/callback"
+    google_oauth_scopes: str = "openid email profile https://www.googleapis.com/auth/youtube.readonly"
+
+    linkedin_client_id: str | None = None
+    linkedin_client_secret: str | None = None
+    linkedin_redirect_uri: str = "http://localhost:8000/api/integrations/linkedin/callback"
+    linkedin_oauth_scopes: str = "openid profile email w_member_social"
+
+    medium_integration_token: str | None = None
+
     youtube_api_key: str | None = None
     enable_live_collection: bool = False
     enable_browser_scraping: bool = False

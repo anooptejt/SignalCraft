@@ -9,6 +9,9 @@ from app.schemas.domain import (
     ApprovalRead,
     ContentIdeaRead,
     DashboardRead,
+    IntegrationCallbackRead,
+    IntegrationConnectRead,
+    IntegrationRead,
     ReportRead,
     RunWorkflowRequest,
     SourceCreate,
@@ -16,6 +19,7 @@ from app.schemas.domain import (
     WorkflowRunRead,
 )
 from app.services.approval_service import ApprovalService
+from app.services.integration_service import IntegrationService
 from app.llm.client import LLMClient
 from app.workflows.orchestrator import WorkflowOrchestrator
 
@@ -60,6 +64,42 @@ def create_source(payload: SourceCreate, db: Session = Depends(get_db)) -> Sourc
 @router.get("/sources", response_model=list[SourceRead])
 def list_sources(db: Session = Depends(get_db)) -> list[Source]:
     return list(db.scalars(select(Source).order_by(Source.created_at.desc())))
+
+
+@router.get("/integrations", response_model=list[IntegrationRead])
+def list_integrations() -> list:
+    return IntegrationService().list_integrations()
+
+
+@router.get("/integrations/google/connect", response_model=IntegrationConnectRead)
+def connect_google() -> dict[str, str]:
+    try:
+        return {"provider": "google", "authorization_url": IntegrationService().google_authorization_url()}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/integrations/linkedin/connect", response_model=IntegrationConnectRead)
+def connect_linkedin() -> dict[str, str]:
+    try:
+        return {"provider": "linkedin", "authorization_url": IntegrationService().linkedin_authorization_url()}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/integrations/{provider}/callback", response_model=IntegrationCallbackRead)
+def integration_callback(provider: str, code: str | None = None, error: str | None = None) -> dict[str, str]:
+    if provider not in {"google", "linkedin"}:
+        raise HTTPException(status_code=404, detail="Unsupported integration callback")
+    if error:
+        return {"provider": provider, "status": "error", "message": error}
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+    return {
+        "provider": provider,
+        "status": "authorization_code_received",
+        "message": "OAuth redirect succeeded. Token exchange and encrypted storage are the next production step.",
+    }
 
 
 @router.get("/approvals", response_model=list[ApprovalRead])

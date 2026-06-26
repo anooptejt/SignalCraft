@@ -45,6 +45,19 @@ export type Dashboard = {
   workflow_runs: WorkflowRun[];
 };
 
+export type Integration = {
+  provider: string;
+  label: string;
+  purpose: string;
+  connection_mode: string;
+  configured: boolean;
+  connected: boolean;
+  status: string;
+  missing_env: string[];
+  scopes: string[];
+  docs_url: string;
+};
+
 export async function getDashboard(): Promise<Dashboard> {
   const response = await fetch(`${API_BASE}/dashboard`);
   if (!response.ok) throw new Error("Unable to load dashboard");
@@ -81,4 +94,20 @@ export async function generateSampleReport(): Promise<Report> {
   const response = await fetch(`${API_BASE}/reports/sample`, { method: "POST" });
   if (!response.ok) throw new Error("Unable to generate sample report");
   return response.json();
+}
+
+export async function getIntegrations(): Promise<Integration[]> {
+  const response = await fetch(`${API_BASE}/integrations`);
+  if (!response.ok) throw new Error("Unable to load integrations");
+  return response.json();
+}
+
+export async function getIntegrationConnectUrl(provider: "google" | "linkedin"): Promise<string> {
+  const response = await fetch(`${API_BASE}/integrations/${provider}/connect`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ detail: "Unable to start connection" }));
+    throw new Error(payload.detail ?? "Unable to start connection");
+  }
+  const payload = (await response.json()) as { authorization_url: string };
+  return payload.authorization_url;
 }

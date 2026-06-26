@@ -110,6 +110,13 @@ Key variables:
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
 - `APPROVAL_PHONE_NUMBER`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `LINKEDIN_CLIENT_ID`
+- `LINKEDIN_CLIENT_SECRET`
+- `LINKEDIN_REDIRECT_URI`
+- `MEDIUM_INTEGRATION_TOKEN`
 - `YOUTUBE_API_KEY`
 
 ## Status
@@ -144,3 +151,13 @@ curl http://localhost:8000/api/llm/test
 ```
 
 For local parity with EFD, copy the LLM-related values from `Engineer-frontdoor/backend/.env` into `backend/.env`. The file is ignored by git and must not be committed.
+
+## Account Connections
+
+The Settings page includes UI connection cards for:
+
+- Google / YouTube via OAuth 2.0 with `https://www.googleapis.com/auth/youtube.readonly`.
+- LinkedIn via OAuth 2.0. LinkedIn post access depends on the products and scopes approved for your LinkedIn app.
+- Medium via `MEDIUM_INTEGRATION_TOKEN`.
+
+Add the related values to `backend/.env`, restart the backend, then open Settings in the UI. The UI shows missing environment variables but never displays secret values.

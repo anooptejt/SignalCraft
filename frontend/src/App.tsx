@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { BellRing, Bot, Check, Database, FileText, Flame, Play, RadioTower, ShieldCheck, X } from "lucide-react";
+import {
+  BellRing,
+  Bot,
+  Check,
+  Database,
+  ExternalLink,
+  FileText,
+  Flame,
+  KeyRound,
+  Link2,
+  Play,
+  RadioTower,
+  ShieldCheck,
+  X
+} from "lucide-react";
 
 import { Sidebar } from "./components/Sidebar";
 import type { ViewId } from "./components/Sidebar";
@@ -7,10 +21,13 @@ import { MetricCard } from "./components/MetricCard";
 import {
   Approval,
   Dashboard,
+  Integration,
   decideApproval,
   generateSampleReport,
   getApprovals,
   getDashboard,
+  getIntegrationConnectUrl,
+  getIntegrations,
   runDailyWorkflow
 } from "./lib/api";
 import { fallbackApprovals, fallbackDashboard } from "./data/fallback";
@@ -19,15 +36,19 @@ import "./styles/main.css";
 function App() {
   const [dashboard, setDashboard] = useState<Dashboard>(fallbackDashboard);
   const [approvals, setApprovals] = useState<Approval[]>(fallbackApprovals);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<"live" | "offline">("offline");
   const [busy, setBusy] = useState(false);
   const [activeView, setActiveView] = useState<ViewId>("dashboard");
 
   async function refresh() {
     try {
-      const [dashboardData, approvalsData] = await Promise.all([getDashboard(), getApprovals()]);
+      const [dashboardData, approvalsData, integrationData] = await Promise.all([getDashboard(), getApprovals(), getIntegrations()]);
       setDashboard(dashboardData);
       setApprovals(approvalsData);
+      setIntegrations(integrationData);
+      setIntegrationError(null);
       setApiStatus("live");
     } catch {
       setApiStatus("offline");
@@ -65,6 +86,24 @@ function App() {
     try {
       await decideApproval(id, approved);
       await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConnectIntegration(provider: string) {
+    if (provider === "medium") {
+      setIntegrationError("Medium uses MEDIUM_INTEGRATION_TOKEN in backend/.env for now. Add the token, restart the API, then refresh this page.");
+      return;
+    }
+    if (provider !== "google" && provider !== "linkedin") return;
+    setBusy(true);
+    setIntegrationError(null);
+    try {
+      const authorizationUrl = await getIntegrationConnectUrl(provider);
+      window.location.assign(authorizationUrl);
+    } catch (error) {
+      setIntegrationError(error instanceof Error ? error.message : "Unable to start connection");
     } finally {
       setBusy(false);
     }
@@ -318,26 +357,80 @@ function App() {
     }
 
     return (
-      <section className="panel tablePanel">
-        <h3>Runtime Settings</h3>
-        <p>These values are loaded from backend environment variables and should never expose secrets in the UI.</p>
-        <div className="dataTable">
-          <div className="dataRow">
-            <strong>LLM provider</strong>
-            <span>Azure OpenAI compatible</span>
-            <p>Uses the same OpenAI-compatible contract as EFD.</p>
+      <section className="singleColumn">
+        <section className="panel integrationsPanel">
+          <div className="panelHeader">
+            <div>
+              <h3>Account Connections</h3>
+              <p>Connect trusted accounts from the UI. Secrets stay in backend environment variables.</p>
+            </div>
+            <KeyRound size={20} />
           </div>
-          <div className="dataRow">
-            <strong>Phone approvals</strong>
-            <span>Console now, Twilio later</span>
-            <p>Every action creates an approval object before execution.</p>
+          {integrationError ? <div className="inlineAlert">{integrationError}</div> : null}
+          <div className="integrationGrid">
+            {integrations.length === 0 ? (
+              <div className="emptyState">Integration status is available when the API is running.</div>
+            ) : (
+              integrations.map((integration) => (
+                <article className="integrationCard" key={integration.provider}>
+                  <div className="integrationTitle">
+                    <div>
+                      <strong>{integration.label}</strong>
+                      <span>{integration.connection_mode}</span>
+                    </div>
+                    <span className={integration.configured ? "connectionBadge ready" : "connectionBadge missing"}>
+                      {integration.configured ? (integration.connected ? "Connected" : "Ready") : "Missing config"}
+                    </span>
+                  </div>
+                  <p>{integration.purpose}</p>
+                  <div className="scopeList">
+                    {integration.scopes.map((scope) => (
+                      <small key={scope}>{scope}</small>
+                    ))}
+                  </div>
+                  {integration.missing_env.length > 0 ? (
+                    <div className="missingEnv">
+                      <span>Required env</span>
+                      <code>{integration.missing_env.join(", ")}</code>
+                    </div>
+                  ) : null}
+                  <div className="cardActions">
+                    <button className="primaryButton" onClick={() => handleConnectIntegration(integration.provider)} disabled={busy || !integration.configured}>
+                      <Link2 size={16} />
+                      {integration.provider === "medium" ? "Use token" : "Connect"}
+                    </button>
+                    <a className="secondaryLink" href={integration.docs_url} target="_blank" rel="noreferrer">
+                      <ExternalLink size={15} />
+                      Docs
+                    </a>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
-          <div className="dataRow">
-            <strong>Storage</strong>
-            <span>Postgres + pgvector</span>
-            <p>Supports structured history and future RAG memory.</p>
+        </section>
+
+        <section className="panel tablePanel">
+          <h3>Runtime Settings</h3>
+          <p>These values are loaded from backend environment variables and should never expose secrets in the UI.</p>
+          <div className="dataTable">
+            <div className="dataRow">
+              <strong>LLM provider</strong>
+              <span>Azure OpenAI compatible</span>
+              <p>Uses the same OpenAI-compatible contract as EFD.</p>
+            </div>
+            <div className="dataRow">
+              <strong>Phone approvals</strong>
+              <span>Console now, Twilio later</span>
+              <p>Every action creates an approval object before execution.</p>
+            </div>
+            <div className="dataRow">
+              <strong>Storage</strong>
+              <span>Postgres + pgvector</span>
+              <p>Supports structured history and future RAG memory.</p>
+            </div>
           </div>
-        </div>
+        </section>
       </section>
     );
   }

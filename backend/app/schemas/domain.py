@@ -82,3 +82,27 @@ class DashboardRead(BaseModel):
 
 class RunWorkflowRequest(BaseModel):
     workflow_name: str = "daily_content_intelligence"
+
+
+class IntegrationRead(BaseModel):
+    provider: str
+    label: str
+    purpose: str
+    connection_mode: str
+    configured: bool
+    connected: bool
+    status: str
+    missing_env: list[str]
+    scopes: list[str]
+    docs_url: str
+
+
+class IntegrationConnectRead(BaseModel):
+    provider: str
+    authorization_url: str
+
+
+class IntegrationCallbackRead(BaseModel):
+    provider: str
+    status: str
+    message: str
