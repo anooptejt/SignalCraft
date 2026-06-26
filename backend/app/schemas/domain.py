@@ -84,6 +84,10 @@ class PublishedPostRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LinkedInHistoryImport(BaseModel):
+    raw_text: str
+
+
 class ReportRead(BaseModel):
     id: str
     title: str

@@ -171,6 +171,19 @@ export async function seedLinkedInHistory(): Promise<PublishedPost[]> {
   return response.json();
 }
 
+export async function importLinkedInHistory(rawText: string): Promise<PublishedPost[]> {
+  const response = await fetch(`${API_BASE}/personal/linkedin/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ raw_text: rawText })
+  });
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({ detail: "Unable to import LinkedIn history" }));
+    throw new Error(errorPayload.detail ?? "Unable to import LinkedIn history");
+  }
+  return response.json();
+}
+
 export async function getTopLinkedInPosts(): Promise<PublishedPost[]> {
   const response = await fetch(`${API_BASE}/personal/linkedin/top-posts`);
   if (!response.ok) throw new Error("Unable to load LinkedIn post history");

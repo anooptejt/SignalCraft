@@ -13,6 +13,7 @@ from app.schemas.domain import (
     IntegrationConfigUpdate,
     IntegrationConnectRead,
     IntegrationRead,
+    LinkedInHistoryImport,
     PublishedPostRead,
     ReportRead,
     RunWorkflowRequest,
@@ -164,6 +165,15 @@ def _post_with_latest_metric(post: PublishedPost, db: Session) -> dict:
 @router.post("/personal/linkedin/sample", response_model=list[PublishedPostRead])
 def seed_linkedin_history(db: Session = Depends(get_db)) -> list[dict]:
     posts = PersonalContentService(db).seed_linkedin_history()
+    return [_post_with_latest_metric(post, db) for post in posts]
+
+
+@router.post("/personal/linkedin/import", response_model=list[PublishedPostRead])
+def import_linkedin_history(payload: LinkedInHistoryImport, db: Session = Depends(get_db)) -> list[dict]:
+    try:
+        posts = PersonalContentService(db).import_linkedin_history(payload.raw_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return [_post_with_latest_metric(post, db) for post in posts]
 
 

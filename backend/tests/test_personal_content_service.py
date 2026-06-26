@@ -40,3 +40,21 @@ def test_propose_articles_from_history_uses_top_post_patterns():
         assert all(idea.status.value == "draft" for idea in ideas)
         assert "Impressions: 18400" in ideas[0].source_pattern
         assert db.query(ContentIdea).filter(ContentIdea.idea_type == "linkedin_article").count() == 3
+
+
+def test_import_linkedin_history_uses_personal_rows_and_removes_demo_samples():
+    with make_session() as db:
+        service = PersonalContentService(db)
+        service.seed_linkedin_history()
+
+        posts = service.import_linkedin_history(
+            "title,content,impressions,likes,comments,shares,saves,tags,url\n"
+            "My actual LinkedIn post,Real post text from my profile,2500,120,15,6,30,\"AI Agents,DevOps\",https://linkedin.example/post/1\n"
+            "Another personal post,Second real post,6200,210,22,10,44,Career Guidance,https://linkedin.example/post/2\n"
+        )
+
+        assert [post.title for post in posts[:2]] == ["Another personal post", "My actual LinkedIn post"]
+        assert all(not (post.url or "").startswith("signalcraft://sample/linkedin/") for post in posts)
+        top_metric = db.query(PerformanceMetric).filter(PerformanceMetric.post_id == posts[0].id).first()
+        assert top_metric.views == 6200
+        assert top_metric.engagement_rate == 4.61

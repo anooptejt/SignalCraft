@@ -395,6 +395,40 @@ nav {
   gap: 10px;
 }
 
+.importBox {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #e5ebe8;
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 14px;
+}
+
+.importBox label {
+  color: #24312c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.importBox textarea {
+  width: 100%;
+  min-height: 124px;
+  resize: vertical;
+  border: 1px solid #cfd9d4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17201d;
+  font: 13px/1.5 "SFMono-Regular", Consolas, monospace;
+  padding: 12px;
+}
+
+.importBox p {
+  color: #66736e;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .postRankList {
   display: grid;
   gap: 10px;

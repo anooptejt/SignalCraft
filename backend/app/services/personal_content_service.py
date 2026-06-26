@@ -1,6 +1,10 @@
+import csv
+import json
+import re
 from datetime import datetime
+from io import StringIO
 
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, select
 from sqlalchemy.orm import Session
 
 from app.models.domain import CollectedItem, ContentIdea, ContentStatus, PerformanceMetric, PublishedPost, Source
@@ -9,6 +13,64 @@ from app.models.domain import CollectedItem, ContentIdea, ContentStatus, Perform
 class PersonalContentService:
     def __init__(self, db: Session):
         self.db = db
+
+    def import_linkedin_history(self, raw_text: str) -> list[PublishedPost]:
+        rows = self._parse_import_rows(raw_text)
+        if not rows:
+            raise ValueError("Paste at least one LinkedIn post row as JSON or CSV.")
+
+        self._delete_sample_history()
+        imported: list[PublishedPost] = []
+        for row in rows:
+            title = self._text(row, ["title", "post_title", "headline"]) or "Untitled LinkedIn post"
+            content = self._text(row, ["content", "post", "text", "body", "caption"]) or title
+            url = self._text(row, ["url", "link", "post_url"]) or f"signalcraft://personal/linkedin/{self._slug(title)}"
+            tags = self._tags(row)
+            published_at = self._date(row, ["published_at", "date", "created_at"])
+            post = self._existing_personal_post(url, title)
+            if post:
+                post.title = title
+                post.content = content
+                post.url = url
+                post.published_at = published_at
+                post.topic_tags = tags
+            else:
+                post = PublishedPost(
+                    platform="linkedin",
+                    title=title,
+                    url=url,
+                    content=content,
+                    published_at=published_at,
+                    topic_tags=tags,
+                )
+                self.db.add(post)
+                self.db.flush()
+
+            views = self._int(row, ["impressions", "views", "reach"])
+            likes = self._int(row, ["likes", "reactions"])
+            comments = self._int(row, ["comments"])
+            shares = self._int(row, ["shares", "reposts"])
+            saves = self._int(row, ["saves"])
+            engagement_rate = self._float(row, ["engagement_rate", "engagement"])
+            if engagement_rate == 0 and views:
+                engagement_rate = round(((likes + comments + shares + saves) / views) * 100, 2)
+
+            self.db.add(
+                PerformanceMetric(
+                    post_id=post.id,
+                    likes=likes,
+                    comments=comments,
+                    shares=shares,
+                    saves=saves,
+                    views=views,
+                    engagement_rate=engagement_rate,
+                )
+            )
+            imported.append(post)
+
+        self._seed_external_story_patterns()
+        self.db.commit()
+        return self.top_linkedin_posts(limit=10)
 
     def seed_linkedin_history(self) -> list[PublishedPost]:
         existing = list(
@@ -153,6 +215,98 @@ class PersonalContentService:
             .order_by(PerformanceMetric.captured_at.desc())
             .limit(1)
         ).first()
+
+    def _delete_sample_history(self) -> None:
+        sample_ids = list(
+            self.db.scalars(
+                select(PublishedPost.id)
+                .where(PublishedPost.platform == "linkedin")
+                .where(PublishedPost.url.like("signalcraft://sample/linkedin/%"))
+            )
+        )
+        if not sample_ids:
+            return
+        self.db.execute(delete(PerformanceMetric).where(PerformanceMetric.post_id.in_(sample_ids)))
+        self.db.execute(delete(PublishedPost).where(PublishedPost.id.in_(sample_ids)))
+
+    def _parse_import_rows(self, raw_text: str) -> list[dict]:
+        text = raw_text.strip()
+        if not text:
+            return []
+        try:
+            payload = json.loads(text)
+            if isinstance(payload, dict):
+                if isinstance(payload.get("posts"), list):
+                    return [dict(item) for item in payload["posts"] if isinstance(item, dict)]
+                return [payload]
+            if isinstance(payload, list):
+                return [dict(item) for item in payload if isinstance(item, dict)]
+        except json.JSONDecodeError:
+            pass
+
+        reader = csv.DictReader(StringIO(text))
+        return [dict(row) for row in reader if any((value or "").strip() for value in row.values())]
+
+    def _existing_personal_post(self, url: str, title: str) -> PublishedPost | None:
+        post = self.db.scalars(select(PublishedPost).where(PublishedPost.platform == "linkedin").where(PublishedPost.url == url).limit(1)).first()
+        if post:
+            return post
+        return self.db.scalars(
+            select(PublishedPost)
+            .where(PublishedPost.platform == "linkedin")
+            .where(PublishedPost.url.like("signalcraft://personal/linkedin/%"))
+            .where(PublishedPost.title == title)
+            .limit(1)
+        ).first()
+
+    def _text(self, row: dict, keys: list[str]) -> str | None:
+        normalized = self._normalized_row(row)
+        for key in keys:
+            value = normalized.get(key)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+        return None
+
+    def _int(self, row: dict, keys: list[str]) -> int:
+        value = self._text(row, keys)
+        if not value:
+            return 0
+        digits = re.sub(r"[^0-9]", "", value)
+        return int(digits) if digits else 0
+
+    def _float(self, row: dict, keys: list[str]) -> float:
+        value = self._text(row, keys)
+        if not value:
+            return 0
+        cleaned = re.sub(r"[^0-9.]", "", value)
+        return float(cleaned) if cleaned else 0
+
+    def _date(self, row: dict, keys: list[str]) -> datetime | None:
+        value = self._text(row, keys)
+        if not value:
+            return None
+        for date_format in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(value, date_format)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError:
+            return None
+
+    def _tags(self, row: dict) -> list[str]:
+        value = self._text(row, ["tags", "topic_tags", "hashtags", "topics"])
+        if not value:
+            return ["LinkedIn", "PersonalPost"]
+        return [tag.strip().strip("#") for tag in re.split(r"[,;|]", value) if tag.strip()]
+
+    def _normalized_row(self, row: dict) -> dict[str, str]:
+        return {str(key).strip().lower().replace(" ", "_"): value for key, value in row.items()}
+
+    def _slug(self, title: str) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+        return slug[:80] or "post"
 
     def _seed_external_story_patterns(self) -> None:
         source = self.db.scalars(select(Source).where(Source.name == "LinkedIn public inspiration patterns").limit(1)).first()

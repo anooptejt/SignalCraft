@@ -34,6 +34,7 @@ import {
   getIntegrationConnectUrl,
   getIntegrations,
   getTopLinkedInPosts,
+  importLinkedInHistory,
   proposeArticlesFromHistory,
   runDailyWorkflow,
   seedLinkedInHistory
@@ -46,6 +47,10 @@ function App() {
   const [approvals, setApprovals] = useState<Approval[]>(fallbackApprovals);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [topPosts, setTopPosts] = useState<PublishedPost[]>([]);
+  const [linkedinImportText, setLinkedinImportText] = useState(
+    "title,content,impressions,likes,comments,shares,saves,tags,url\n" +
+      "My real LinkedIn post title,Paste the post text here,12500,320,48,21,75,\"DevOps,CI/CD\",https://www.linkedin.com/feed/update/..."
+  );
   const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [personalError, setPersonalError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<"live" | "offline">("offline");
@@ -131,6 +136,20 @@ function App() {
     setPersonalError(null);
     try {
       const posts = await seedLinkedInHistory();
+      setTopPosts(posts);
+      await refresh();
+    } catch (error) {
+      setPersonalError(error instanceof Error ? error.message : "Unable to import LinkedIn history");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleImportLinkedInHistory() {
+    setBusy(true);
+    setPersonalError(null);
+    try {
+      const posts = await importLinkedInHistory(linkedinImportText);
       setTopPosts(posts);
       await refresh();
     } catch (error) {
@@ -250,16 +269,30 @@ function App() {
         <div className="panelHeader">
           <div>
             <h3>LinkedIn Performance Intelligence</h3>
-            <p>Import your post history, rank what worked, then draft articles from your strongest patterns.</p>
+            <p>Paste your real LinkedIn post metrics, rank what worked, then draft articles from your strongest patterns.</p>
           </div>
           <BarChart3 size={20} />
         </div>
+        <div className="importBox">
+          <label htmlFor="linkedin-import">Paste your LinkedIn post export or spreadsheet rows</label>
+          <textarea
+            id="linkedin-import"
+            value={linkedinImportText}
+            onChange={(event) => setLinkedinImportText(event.target.value)}
+            rows={5}
+          />
+          <p>Accepted columns: title, content, impressions, likes, comments, shares, saves, tags, url.</p>
+        </div>
         <div className="personalActions">
+          <button className="primaryButton" onClick={handleImportLinkedInHistory} disabled={busy}>
+            <Database size={17} />
+            Import my posts
+          </button>
           <button className="secondaryButton" onClick={handleSeedLinkedInHistory} disabled={busy}>
             <Database size={17} />
-            Import sample history
+            Load demo sample
           </button>
-          <button className="primaryButton" onClick={handleProposeArticles} disabled={busy}>
+          <button className="secondaryButton" onClick={handleProposeArticles} disabled={busy}>
             <Sparkles size={17} />
             Generate from best posts
           </button>
