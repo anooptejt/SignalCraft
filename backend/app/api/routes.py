@@ -16,6 +16,7 @@ from app.schemas.domain import (
     WorkflowRunRead,
 )
 from app.services.approval_service import ApprovalService
+from app.llm.client import LLMClient
 from app.workflows.orchestrator import WorkflowOrchestrator
 
 router = APIRouter()
@@ -24,6 +25,11 @@ router = APIRouter()
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "signalcraft-api"}
+
+
+@router.get("/llm/test")
+def test_llm_connection() -> dict:
+    return LLMClient().test_connection()
 
 
 @router.get("/dashboard", response_model=DashboardRead)

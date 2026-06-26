@@ -98,6 +98,12 @@ Key variables:
 - `LLM_PROVIDER`
 - `LLM_MODEL`
 - `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_DEPLOYMENT`
+- `AZURE_OPENAI_API_VERSION`
 - `ANTHROPIC_API_KEY`
 - `PHONE_PROVIDER`
 - `TWILIO_ACCOUNT_SID`
@@ -109,3 +115,32 @@ Key variables:
 ## Status
 
 This is a first product scaffold. It is designed to be extended into production-grade scraping, LLM, notification, and deployment behavior without changing the core workflow model.
+
+## EFD-Compatible OpenAI LLM
+
+SignalCraft supports the same OpenAI-compatible environment contract used by Engineer Front Door:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+For EFD's Azure-hosted OpenAI mode:
+
+```text
+LLM_PROVIDER=azure-openai
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-08-01-preview
+```
+
+Test the configured provider:
+
+```bash
+curl http://localhost:8000/api/llm/test
+```
+
+For local parity with EFD, copy the LLM-related values from `Engineer-frontdoor/backend/.env` into `backend/.env`. The file is ignored by git and must not be committed.

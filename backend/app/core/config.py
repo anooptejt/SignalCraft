@@ -10,8 +10,14 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     llm_provider: str = "openai"
-    llm_model: str = "gpt-4.1-mini"
+    llm_model: str = "gpt-4o"
     openai_api_key: str | None = None
+    openai_model: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    azure_openai_api_key: str | None = None
+    azure_openai_endpoint: str | None = None
+    azure_openai_deployment: str = "gpt-4o"
+    azure_openai_api_version: str = "2024-08-01-preview"
     anthropic_api_key: str | None = None
 
     phone_provider: str = "console"
