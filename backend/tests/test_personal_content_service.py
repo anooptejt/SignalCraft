@@ -58,3 +58,21 @@ def test_import_linkedin_history_uses_personal_rows_and_removes_demo_samples():
         top_metric = db.query(PerformanceMetric).filter(PerformanceMetric.post_id == posts[0].id).first()
         assert top_metric.views == 6200
         assert top_metric.engagement_rate == 4.61
+
+
+def test_recommendations_follow_imported_writing_style_patterns():
+    with make_session() as db:
+        service = PersonalContentService(db)
+        service.import_linkedin_history(
+            "title,content,impressions,likes,comments,shares,saves,tags,url\n"
+            "Reflections from Civo Navigate India 2025,Real AI event takeaways about Civo cloud sovereignty KitOps and enterprise automation,2000,33,0,0,0,\"Civo,AI,DevOps\",\n"
+            "MLOps seamlessly within DevOps teams,DevOps engineers can map CI/CD GitOps Terraform and monitoring into MLOps practices,1800,12,0,0,0,\"DevOps,MLOps,AIEngineering\",\n"
+            "The education debate every parent in India is quietly having right now,Parenting education tradeoff about IB curriculum cost and future of work,900,20,0,0,0,\"DigitalParenting,FutureOfWork\",\n"
+        )
+
+        ideas = service.propose_articles_from_history()
+
+        titles = [idea.title for idea in ideas]
+        assert "What a real AI event taught me about enterprise platform engineering" in titles
+        assert "MLOps is not a separate career track. It is DevOps growing up for AI systems" in titles
+        assert any("Writing style:" in idea.source_pattern for idea in ideas)

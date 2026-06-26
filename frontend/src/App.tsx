@@ -294,7 +294,7 @@ function App() {
           </button>
           <button className="secondaryButton" onClick={handleProposeArticles} disabled={busy}>
             <Sparkles size={17} />
-            Generate from best posts
+            Recommend in my style
           </button>
         </div>
         {personalError ? <div className="inlineAlert">{personalError}</div> : null}

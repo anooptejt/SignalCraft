@@ -184,18 +184,19 @@ class PersonalContentService:
             metric = self._latest_metric(post.id)
             tags = [str(tag) for tag in (post.topic_tags or [])]
             primary_tag = tags[0] if tags else "personal brand"
+            recommendation = self._recommendation_for_post(post, primary_tag)
             source_pattern = (
                 f"Top LinkedIn post: {post.title}. "
                 f"Impressions: {metric.views if metric else 0}; comments: {metric.comments if metric else 0}; "
-                "reuse the learning-in-public angle, not the wording."
+                f"Writing style: {recommendation['style_pattern']}"
             )
             proposals.append(
                 ContentIdea(
                     idea_type="linkedin_article",
-                    title=f"From my experience: {primary_tag} without the confusion",
-                    hook=self._hook_for_post(post),
-                    problem=self._problem_for_tag(primary_tag),
-                    angle=self._angle_for_post(post, primary_tag),
+                    title=recommendation["title"],
+                    hook=recommendation["hook"],
+                    problem=recommendation["problem"],
+                    angle=recommendation["angle"],
                     source_pattern=source_pattern,
                     hashtags=self._hashtags_for_tags(tags),
                     status=ContentStatus.draft,
@@ -357,6 +358,49 @@ class PersonalContentService:
         if "parent" in " ".join(post.topic_tags or []).lower():
             return "I don't want to preach. I want to learn out loud from one small parenting moment."
         return "One of my best posts worked because it started from confusion, not expertise."
+
+    def _recommendation_for_post(self, post: PublishedPost, primary_tag: str) -> dict[str, str]:
+        text = f"{post.title} {post.content}".lower()
+        if "civo" in text or "navigate" in text or "event" in text:
+            return {
+                "title": "What a real AI event taught me about enterprise platform engineering",
+                "hook": "Some events give you slides. The useful ones give you sharper questions to bring back to your own platform work.",
+                "problem": "AI discussions often stay abstract until they are connected to cloud, sovereignty, lifecycle automation, and real engineering constraints.",
+                "angle": (
+                    "Write in your reflective event-debrief style: open with the moment that stayed with you, group the takeaways into "
+                    "3 practical themes, connect each theme to DevOps/platform engineering, and end with one question for practitioners."
+                ),
+                "style_pattern": "event reflection, named takeaways, practical AI/platform implications, discussion question close.",
+            }
+        if "mlops" in text or "argocd" in text or "gitops" in text:
+            return {
+                "title": "MLOps is not a separate career track. It is DevOps growing up for AI systems",
+                "hook": "DevOps engineers already understand the hardest part of MLOps: making change safe, repeatable, observable, and reversible.",
+                "problem": "Many engineers treat MLOps as a separate world instead of mapping it to skills they already use in CI/CD, GitOps, Terraform, and monitoring.",
+                "angle": (
+                    "Use your mapping style: compare familiar DevOps practices to their MLOps equivalents, add one real product/example, "
+                    "and close with a practical question that invites other engineers to share their stack."
+                ),
+                "style_pattern": "DevOps-to-AI bridge, skill mapping, concrete tool examples, practitioner CTA.",
+            }
+        if "education" in text or "parent" in text or "kids" in text or "school" in text:
+            return {
+                "title": "The education trade-off I am still learning to think through as a parent in tech",
+                "hook": "Some parenting decisions are not just emotional decisions. They are long-term system design decisions for a child’s future.",
+                "problem": "Parents are forced to balance curriculum, cost, future skills, local policy shifts, and family lifestyle trade-offs without a clean answer.",
+                "angle": (
+                    "Write in your personal parent-engineer voice: state the dilemma honestly, explain the trade-offs structurally, "
+                    "avoid preaching, and invite other parents to compare how they are making the decision."
+                ),
+                "style_pattern": "personal dilemma, systems thinking applied to parenting, humble trade-off analysis, discussion invitation.",
+            }
+        return {
+            "title": f"From my experience: {primary_tag} without the confusion",
+            "hook": self._hook_for_post(post),
+            "problem": self._problem_for_tag(primary_tag),
+            "angle": self._angle_for_post(post, primary_tag),
+            "style_pattern": "learning-in-public opening, practical explanation, lived example, clear takeaway.",
+        }
 
     def _problem_for_tag(self, primary_tag: str) -> str:
         if primary_tag.lower() in {"ci/cd", "devops"}:
