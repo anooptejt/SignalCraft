@@ -1,0 +1,1 @@
+"""SignalCraft backend package."""
