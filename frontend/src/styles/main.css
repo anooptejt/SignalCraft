@@ -238,6 +238,11 @@ nav {
   grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
 }
 
+.singleColumn {
+  display: grid;
+  gap: 16px;
+}
+
 .panel {
   padding: 18px;
 }
@@ -379,6 +384,48 @@ nav {
   padding: 4px 7px;
 }
 
+.tablePanel h3,
+.tablePanel p {
+  margin: 0;
+}
+
+.tablePanel > p {
+  color: #66736e;
+  margin-top: 5px;
+}
+
+.dataTable {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 190px 170px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid #e5ebe8;
+  border-radius: 8px;
+  background: #fbfcfc;
+}
+
+.dataRow strong {
+  font-size: 14px;
+}
+
+.dataRow span {
+  color: #0f5f59;
+  font-size: 13px;
+}
+
+.dataRow p {
+  color: #56645f;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 @media (max-width: 980px) {
   .appShell {
     grid-template-columns: 1fr;
@@ -407,6 +454,11 @@ nav {
   .gridTwo,
   .gridTwo.wideLeft {
     grid-template-columns: 1fr;
+  }
+
+  .dataRow {
+    grid-template-columns: 1fr;
+    gap: 5px;
   }
 
   .topbar {
