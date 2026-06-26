@@ -1,4 +1,4 @@
-from app.models.domain import CollectedItem, ContentIdea
+from app.models.domain import CollectedItem, ContentIdea, ContentStatus
 
 
 class ContentEngine:
@@ -25,6 +25,7 @@ class ContentEngine:
                 angle="Explain CI/CD through the journey from manual deploy anxiety to repeatable releases.",
                 source_pattern=patterns[0],
                 hashtags=["DevOps", "CICD", "SoftwareEngineering"],
+                status=ContentStatus.draft,
             ),
             ContentIdea(
                 idea_type="short_video",
@@ -34,6 +35,7 @@ class ContentEngine:
                 angle="Use a school principal story to explain scheduling and desired state.",
                 source_pattern="DevOps Stories for Kids",
                 hashtags=["Kubernetes", "DevOpsForKids", "Learning"],
+                status=ContentStatus.draft,
             ),
             ContentIdea(
                 idea_type="parenting_reflection",
@@ -43,6 +45,7 @@ class ContentEngine:
                 angle="Share one small pause habit and separate personal experience from advice.",
                 source_pattern="Humble parenting voice",
                 hashtags=["Parenting", "MindfulParenting", "LearningOutLoud"],
+                status=ContentStatus.draft,
             ),
         ]
         return ideas

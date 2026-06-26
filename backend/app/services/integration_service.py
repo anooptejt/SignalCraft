@@ -16,6 +16,11 @@ class IntegrationStatus:
     status: str
     missing_env: list[str]
     scopes: list[str]
+    access_modes: list[str]
+    auto_actions: list[str]
+    approval_actions: list[str]
+    notification_events: list[str]
+    trust_boundary: str
     docs_url: str
 
 
@@ -67,13 +72,18 @@ class IntegrationService:
         return IntegrationStatus(
             provider="google",
             label="Google / YouTube",
-            purpose="Read your YouTube channel data and video signals through Google OAuth.",
+            purpose="Analyze your YouTube channel, video metadata, comments, and performance signals for content ideas.",
             connection_mode="OAuth 2.0",
             configured=not missing,
             connected=False,
             status="Ready to connect" if not missing else "Add Google OAuth app credentials",
             missing_env=missing,
             scopes=self.settings.google_oauth_scopes.split(),
+            access_modes=["Analyze", "Draft", "Notify"],
+            auto_actions=["Read YouTube signals", "Collect metrics", "Generate draft ideas"],
+            approval_actions=["Publish or update public content"],
+            notification_events=["Draft report ready", "High-signal content pattern found"],
+            trust_boundary="SignalCraft can analyze and draft directly for personal use. It will not publish without approval.",
             docs_url="https://developers.google.com/identity/protocols/oauth2/web-server",
         )
 
@@ -82,13 +92,18 @@ class IntegrationService:
         return IntegrationStatus(
             provider="linkedin",
             label="LinkedIn",
-            purpose="Request LinkedIn OAuth access for your profile and post workflow.",
+            purpose="Analyze your LinkedIn posts and engagement patterns when approved LinkedIn access is available.",
             connection_mode="OAuth 2.0",
             configured=not missing,
             connected=False,
             status="Ready to connect" if not missing else "Add LinkedIn app credentials",
             missing_env=missing,
             scopes=self.settings.linkedin_oauth_scopes.split(),
+            access_modes=["Analyze", "Draft", "Ask before publishing"],
+            auto_actions=["Read available post signals", "Scrape/import allowed content", "Generate LinkedIn drafts"],
+            approval_actions=["Publish posts", "Comment", "Send messages"],
+            notification_events=["LinkedIn draft ready", "Post pattern ready for review"],
+            trust_boundary="Personal analysis and drafts run without approvals. Anything that changes LinkedIn needs approval.",
             docs_url="https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow",
         )
 
@@ -97,13 +112,18 @@ class IntegrationService:
         return IntegrationStatus(
             provider="medium",
             label="Medium",
-            purpose="Use a Medium integration token for reading account metadata and future publishing workflows.",
+            purpose="Analyze your Medium stories and prepare article drafts from your content patterns.",
             connection_mode="Integration token",
             configured=not missing,
             connected=not missing,
             status="Token configured" if not missing else "Add Medium integration token",
             missing_env=missing,
             scopes=["basicProfile", "listPublications", "publishPost"],
+            access_modes=["Analyze", "Draft", "Ask before publishing"],
+            auto_actions=["Read profile/publication metadata", "Import article history", "Generate Medium drafts"],
+            approval_actions=["Publish stories", "Update existing stories"],
+            notification_events=["Medium article draft ready"],
+            trust_boundary="The token enables personal drafting workflows. Publishing still stays behind approval.",
             docs_url="https://github.com/Medium/medium-api-docs",
         )
 

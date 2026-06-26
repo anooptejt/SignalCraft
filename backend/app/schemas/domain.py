@@ -94,6 +94,11 @@ class IntegrationRead(BaseModel):
     status: str
     missing_env: list[str]
     scopes: list[str]
+    access_modes: list[str]
+    auto_actions: list[str]
+    approval_actions: list[str]
+    notification_events: list[str]
+    trust_boundary: str
     docs_url: str
 
 

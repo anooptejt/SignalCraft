@@ -55,6 +55,11 @@ export type Integration = {
   status: string;
   missing_env: string[];
   scopes: string[];
+  access_modes: string[];
+  auto_actions: string[];
+  approval_actions: string[];
+  notification_events: string[];
+  trust_boundary: string;
   docs_url: string;
 };
 

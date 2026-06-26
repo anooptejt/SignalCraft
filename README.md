@@ -110,6 +110,10 @@ Key variables:
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
 - `APPROVAL_PHONE_NUMBER`
+- `PERSONAL_USE_MODE`
+- `REQUIRE_COLLECTION_APPROVAL`
+- `REQUIRE_PUBLISH_APPROVAL`
+- `NOTIFY_WHEN_DRAFT_READY`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_REDIRECT_URI`
@@ -161,3 +165,11 @@ The Settings page includes UI connection cards for:
 - Medium via `MEDIUM_INTEGRATION_TOKEN`.
 
 Add the related values to `backend/.env`, restart the backend, then open Settings in the UI. The UI shows missing environment variables but never displays secret values.
+
+For personal use, the default trust model is:
+
+- Analysis, scraping/import, and draft generation run directly.
+- Draft-ready notifications are sent when a report or draft is ready.
+- Publishing, commenting, messaging, or changing public content still requires approval.
+
+Use `REQUIRE_COLLECTION_APPROVAL=true` only if you want collection to pause for approval again.

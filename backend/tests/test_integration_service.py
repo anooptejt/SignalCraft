@@ -11,9 +11,13 @@ def test_integrations_report_missing_configuration():
 
     assert statuses["google"].configured is False
     assert "GOOGLE_CLIENT_ID" in statuses["google"].missing_env
+    assert "Analyze" in statuses["google"].access_modes
+    assert statuses["google"].approval_actions == ["Publish or update public content"]
     assert statuses["linkedin"].configured is False
     assert "LINKEDIN_CLIENT_SECRET" in statuses["linkedin"].missing_env
+    assert "Scrape/import allowed content" in statuses["linkedin"].auto_actions
     assert statuses["medium"].connected is False
+    assert "Medium article draft ready" in statuses["medium"].notification_events
 
 
 def test_google_authorization_url_contains_youtube_scope():

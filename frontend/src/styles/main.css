@@ -430,6 +430,41 @@ nav {
   padding-bottom: 20px;
 }
 
+.confidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.confidenceItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #dfe6e2;
+  border-radius: 8px;
+  background: #f7faf8;
+  padding: 12px;
+}
+
+.confidenceItem svg {
+  color: #0f766e;
+  margin-top: 2px;
+}
+
+.confidenceItem strong {
+  display: block;
+  font-size: 13px;
+}
+
+.confidenceItem p {
+  color: #5d6b65;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
 .integrationGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -439,7 +474,7 @@ nav {
 
 .integrationCard {
   display: flex;
-  min-height: 270px;
+  min-height: 430px;
   flex-direction: column;
   gap: 14px;
   justify-content: space-between;
@@ -479,6 +514,12 @@ nav {
   margin: 0;
 }
 
+.integrationCard .trustBoundary {
+  border-left: 3px solid #0f766e;
+  color: #24312c;
+  padding-left: 10px;
+}
+
 .connectionBadge {
   flex: 0 0 auto;
   border-radius: 6px;
@@ -502,13 +543,73 @@ nav {
   gap: 6px;
 }
 
-.scopeList small {
+.scopeList small,
+.modeList small,
+.notificationList small {
   max-width: 100%;
   overflow-wrap: anywhere;
   border-radius: 6px;
   background: #edf3f0;
   color: #46554f;
   padding: 4px 7px;
+}
+
+.modeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modeList small {
+  background: #e4f4ef;
+  color: #0f5f59;
+}
+
+.actionMatrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.actionMatrix div {
+  border: 1px solid #e5ebe8;
+  border-radius: 8px;
+  background: white;
+  padding: 10px;
+}
+
+.actionMatrix span,
+.notificationList span {
+  display: block;
+  color: #0f5f59;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.actionMatrix ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.actionMatrix li {
+  color: #56645f;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.notificationList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.notificationList span {
+  flex-basis: 100%;
+  margin-bottom: 0;
 }
 
 .missingEnv {
@@ -586,7 +687,12 @@ nav {
   .metricGrid,
   .gridTwo,
   .gridTwo.wideLeft,
+  .confidenceGrid,
   .integrationGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionMatrix {
     grid-template-columns: 1fr;
   }
 

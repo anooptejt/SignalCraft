@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     twilio_auth_token: str | None = None
     twilio_from_number: str | None = None
 
+    personal_use_mode: bool = True
+    require_collection_approval: bool = False
+    require_publish_approval: bool = True
+    notify_when_draft_ready: bool = True
+
     google_client_id: str | None = None
     google_client_secret: str | None = None
     google_redirect_uri: str = "http://localhost:8000/api/integrations/google/callback"

@@ -9,9 +9,12 @@ import {
   Flame,
   KeyRound,
   Link2,
+  LockKeyhole,
   Play,
   RadioTower,
+  Send,
   ShieldCheck,
+  Sparkles,
   X
 } from "lucide-react";
 
@@ -120,11 +123,11 @@ function App() {
     },
     workflows: {
       title: "Workflows",
-      description: "Run and inspect HITL-gated content intelligence workflows."
+      description: "Run direct personal analysis, draft generation, and draft-ready notifications."
     },
     approvals: {
       title: "Approvals",
-      description: "Review every proposed agent action before it executes."
+      description: "Review publishing actions before they can change public accounts."
     },
     reports: {
       title: "Reports",
@@ -140,7 +143,7 @@ function App() {
     },
     settings: {
       title: "Settings",
-      description: "Manage LLM, phone approval, scraping, and storage configuration."
+      description: "Connect accounts, choose trust boundaries, and manage draft notifications."
     }
   };
 
@@ -150,7 +153,7 @@ function App() {
         <div className="panelHeader">
           <div>
             <h3>HITL Approval Queue</h3>
-            <p>Every agent action waits here before execution.</p>
+            <p>Personal analysis runs directly. Publishing waits here before execution.</p>
           </div>
           <ShieldCheck size={20} />
         </div>
@@ -280,9 +283,10 @@ function App() {
       ["YouTube", "RSS/API", "Collect titles, descriptions, metrics, and transcripts when available"]
     ];
     const workflowRows = [
-      ["collect_sources", "awaiting approval", "Collect configured public/RSS/manual sources"],
-      ["analyze_patterns", "pending", "Extract themes, hooks, and pain points"],
-      ["generate_report", "pending", "Create Markdown recommendations after approval"]
+      ["collect_sources", "direct", "Collect configured public/RSS/manual sources without approval"],
+      ["analyze_patterns", "direct", "Extract themes, hooks, and pain points"],
+      ["generate_report", "draft ready", "Create Markdown recommendations and notify when ready"],
+      ["publish", "approval required", "Publishing or account-changing actions stay blocked until approved"]
     ];
     const calendarRows = [
       ["Monday", "LinkedIn", "Beginner DevOps explainer"],
@@ -312,7 +316,7 @@ function App() {
       return (
         <section className="panel tablePanel">
           <h3>Daily Intelligence Workflow</h3>
-          <p>Every workflow step is designed to pause at a human approval gate before side effects.</p>
+          <p>Personal-use workflows run analysis and drafts directly. Publishing remains approval-gated.</p>
           <div className="dataTable">
             {workflowRows.map(([step, status, note]) => (
               <div className="dataRow" key={step}>
@@ -362,9 +366,39 @@ function App() {
           <div className="panelHeader">
             <div>
               <h3>Account Connections</h3>
-              <p>Connect trusted accounts from the UI. Secrets stay in backend environment variables.</p>
+              <p>Connect your personal accounts for analysis and drafts. Publishing still requires approval.</p>
             </div>
             <KeyRound size={20} />
+          </div>
+          <div className="confidenceGrid">
+            <div className="confidenceItem">
+              <Sparkles size={18} />
+              <div>
+                <strong>Direct analysis</strong>
+                <p>Scrape/import and pattern analysis run without approvals for your personal workspace.</p>
+              </div>
+            </div>
+            <div className="confidenceItem">
+              <FileText size={18} />
+              <div>
+                <strong>Draft first</strong>
+                <p>SignalCraft creates drafts and reports. It does not publish them automatically.</p>
+              </div>
+            </div>
+            <div className="confidenceItem">
+              <Send size={18} />
+              <div>
+                <strong>Notify when ready</strong>
+                <p>You get a phone/console notification when a draft is ready to review.</p>
+              </div>
+            </div>
+            <div className="confidenceItem">
+              <LockKeyhole size={18} />
+              <div>
+                <strong>Publish gate</strong>
+                <p>Posting, commenting, messaging, or changing content still asks before action.</p>
+              </div>
+            </div>
           </div>
           {integrationError ? <div className="inlineAlert">{integrationError}</div> : null}
           <div className="integrationGrid">
@@ -383,6 +417,38 @@ function App() {
                     </span>
                   </div>
                   <p>{integration.purpose}</p>
+                  <p className="trustBoundary">
+                    {integration.trust_boundary ?? "SignalCraft analyzes and drafts directly, while publishing remains approval-gated."}
+                  </p>
+                  <div className="modeList">
+                    {(integration.access_modes ?? []).map((mode) => (
+                      <small key={mode}>{mode}</small>
+                    ))}
+                  </div>
+                  <div className="actionMatrix">
+                    <div>
+                      <span>Runs directly</span>
+                      <ul>
+                        {(integration.auto_actions ?? []).map((action) => (
+                          <li key={action}>{action}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <span>Asks first</span>
+                      <ul>
+                        {(integration.approval_actions ?? []).map((action) => (
+                          <li key={action}>{action}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="notificationList">
+                    <span>Notifies you</span>
+                    {(integration.notification_events ?? []).map((event) => (
+                      <small key={event}>{event}</small>
+                    ))}
+                  </div>
                   <div className="scopeList">
                     {integration.scopes.map((scope) => (
                       <small key={scope}>{scope}</small>
