@@ -54,6 +54,8 @@ export type Integration = {
   connected: boolean;
   status: string;
   missing_env: string[];
+  required_settings: string[];
+  saved_settings: string[];
   scopes: string[];
   access_modes: string[];
   auto_actions: string[];
@@ -61,6 +63,14 @@ export type Integration = {
   notification_events: string[];
   trust_boundary: string;
   docs_url: string;
+};
+
+export type IntegrationConfigPayload = {
+  client_id?: string;
+  client_secret?: string;
+  redirect_uri?: string;
+  scopes?: string;
+  integration_token?: string;
 };
 
 export async function getDashboard(): Promise<Dashboard> {
@@ -115,4 +125,17 @@ export async function getIntegrationConnectUrl(provider: "google" | "linkedin"):
   }
   const payload = (await response.json()) as { authorization_url: string };
   return payload.authorization_url;
+}
+
+export async function saveIntegrationConfig(provider: string, payload: IntegrationConfigPayload): Promise<Integration> {
+  const response = await fetch(`${API_BASE}/integrations/${provider}/config`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({ detail: "Unable to save integration settings" }));
+    throw new Error(errorPayload.detail ?? "Unable to save integration settings");
+  }
+  return response.json();
 }

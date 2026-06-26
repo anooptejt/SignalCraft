@@ -114,13 +114,6 @@ Key variables:
 - `REQUIRE_COLLECTION_APPROVAL`
 - `REQUIRE_PUBLISH_APPROVAL`
 - `NOTIFY_WHEN_DRAFT_READY`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI`
-- `LINKEDIN_CLIENT_ID`
-- `LINKEDIN_CLIENT_SECRET`
-- `LINKEDIN_REDIRECT_URI`
-- `MEDIUM_INTEGRATION_TOKEN`
 - `YOUTUBE_API_KEY`
 
 ## Status
@@ -162,9 +155,9 @@ The Settings page includes UI connection cards for:
 
 - Google / YouTube via OAuth 2.0 with `https://www.googleapis.com/auth/youtube.readonly`.
 - LinkedIn via OAuth 2.0. LinkedIn post access depends on the products and scopes approved for your LinkedIn app.
-- Medium via `MEDIUM_INTEGRATION_TOKEN`.
+- Medium via an integration token.
 
-Add the related values to `backend/.env`, restart the backend, then open Settings in the UI. The UI shows missing environment variables but never displays secret values.
+Open Settings in the UI and save the connection settings directly on each integration card. SignalCraft stores those settings in the local database and never returns saved secrets back to the browser. `.env` values are only optional fallback defaults for local development.
 
 For personal use, the default trust model is:
 

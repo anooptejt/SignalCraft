@@ -154,3 +154,17 @@ class StrategyMemory(Base):
     evidence: Mapped[dict] = mapped_column(JSON, default=dict)
     confidence: Mapped[float] = mapped_column(Float, default=0.5)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class IntegrationConnection(Base):
+    __tablename__ = "integration_connections"
+
+    provider: Mapped[str] = mapped_column(String(40), primary_key=True)
+    client_id: Mapped[str | None] = mapped_column(Text)
+    client_secret: Mapped[str | None] = mapped_column(Text)
+    redirect_uri: Mapped[str | None] = mapped_column(Text)
+    scopes: Mapped[str | None] = mapped_column(Text)
+    integration_token: Mapped[str | None] = mapped_column(Text)
+    connected: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

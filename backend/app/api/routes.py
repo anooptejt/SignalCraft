@@ -10,6 +10,7 @@ from app.schemas.domain import (
     ContentIdeaRead,
     DashboardRead,
     IntegrationCallbackRead,
+    IntegrationConfigUpdate,
     IntegrationConnectRead,
     IntegrationRead,
     ReportRead,
@@ -67,22 +68,30 @@ def list_sources(db: Session = Depends(get_db)) -> list[Source]:
 
 
 @router.get("/integrations", response_model=list[IntegrationRead])
-def list_integrations() -> list:
-    return IntegrationService().list_integrations()
+def list_integrations(db: Session = Depends(get_db)) -> list:
+    return IntegrationService(db).list_integrations()
+
+
+@router.put("/integrations/{provider}/config", response_model=IntegrationRead)
+def save_integration_config(provider: str, payload: IntegrationConfigUpdate, db: Session = Depends(get_db)):
+    try:
+        return IntegrationService(db).save_config(provider, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/integrations/google/connect", response_model=IntegrationConnectRead)
-def connect_google() -> dict[str, str]:
+def connect_google(db: Session = Depends(get_db)) -> dict[str, str]:
     try:
-        return {"provider": "google", "authorization_url": IntegrationService().google_authorization_url()}
+        return {"provider": "google", "authorization_url": IntegrationService(db).google_authorization_url()}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/integrations/linkedin/connect", response_model=IntegrationConnectRead)
-def connect_linkedin() -> dict[str, str]:
+def connect_linkedin(db: Session = Depends(get_db)) -> dict[str, str]:
     try:
-        return {"provider": "linkedin", "authorization_url": IntegrationService().linkedin_authorization_url()}
+        return {"provider": "linkedin", "authorization_url": IntegrationService(db).linkedin_authorization_url()}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

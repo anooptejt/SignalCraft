@@ -93,6 +93,8 @@ class IntegrationRead(BaseModel):
     connected: bool
     status: str
     missing_env: list[str]
+    required_settings: list[str]
+    saved_settings: list[str]
     scopes: list[str]
     access_modes: list[str]
     auto_actions: list[str]
@@ -100,6 +102,14 @@ class IntegrationRead(BaseModel):
     notification_events: list[str]
     trust_boundary: str
     docs_url: str
+
+
+class IntegrationConfigUpdate(BaseModel):
+    client_id: str | None = None
+    client_secret: str | None = None
+    redirect_uri: str | None = None
+    scopes: str | None = None
+    integration_token: str | None = None
 
 
 class IntegrationConnectRead(BaseModel):

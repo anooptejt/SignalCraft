@@ -25,13 +25,15 @@ import {
   Approval,
   Dashboard,
   Integration,
+  IntegrationConfigPayload,
   decideApproval,
   generateSampleReport,
   getApprovals,
   getDashboard,
   getIntegrationConnectUrl,
   getIntegrations,
-  runDailyWorkflow
+  runDailyWorkflow,
+  saveIntegrationConfig
 } from "./lib/api";
 import { fallbackApprovals, fallbackDashboard } from "./data/fallback";
 import "./styles/main.css";
@@ -40,6 +42,7 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard>(fallbackDashboard);
   const [approvals, setApprovals] = useState<Approval[]>(fallbackApprovals);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [integrationForms, setIntegrationForms] = useState<Record<string, IntegrationConfigPayload>>({});
   const [integrationError, setIntegrationError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<"live" | "offline">("offline");
   const [busy, setBusy] = useState(false);
@@ -96,7 +99,7 @@ function App() {
 
   async function handleConnectIntegration(provider: string) {
     if (provider === "medium") {
-      setIntegrationError("Medium uses MEDIUM_INTEGRATION_TOKEN in backend/.env for now. Add the token, restart the API, then refresh this page.");
+      setIntegrationError("Medium is connected by saving its integration token from this page. Publishing still asks first.");
       return;
     }
     if (provider !== "google" && provider !== "linkedin") return;
@@ -107,6 +110,36 @@ function App() {
       window.location.assign(authorizationUrl);
     } catch (error) {
       setIntegrationError(error instanceof Error ? error.message : "Unable to start connection");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateIntegrationForm(provider: string, field: keyof IntegrationConfigPayload, value: string) {
+    setIntegrationForms((current) => ({
+      ...current,
+      [provider]: {
+        ...current[provider],
+        [field]: value
+      }
+    }));
+  }
+
+  async function handleSaveIntegration(provider: string) {
+    const current = integrationForms[provider] ?? {};
+    const payload = Object.fromEntries(Object.entries(current).filter(([, value]) => typeof value === "string" && value.trim().length > 0));
+    if (Object.keys(payload).length === 0) {
+      setIntegrationError("Enter at least one setting before saving.");
+      return;
+    }
+    setBusy(true);
+    setIntegrationError(null);
+    try {
+      await saveIntegrationConfig(provider, payload as IntegrationConfigPayload);
+      setIntegrationForms((forms) => ({ ...forms, [provider]: {} }));
+      await refresh();
+    } catch (error) {
+      setIntegrationError(error instanceof Error ? error.message : "Unable to save integration settings");
     } finally {
       setBusy(false);
     }
@@ -454,16 +487,77 @@ function App() {
                       <small key={scope}>{scope}</small>
                     ))}
                   </div>
+                  <div className="connectForm">
+                    {integration.provider !== "medium" ? (
+                      <>
+                        <label>
+                          Client ID
+                          <input
+                            value={integrationForms[integration.provider]?.client_id ?? ""}
+                            onChange={(event) => updateIntegrationForm(integration.provider, "client_id", event.target.value)}
+                            placeholder={integration.saved_settings.includes("client_id") ? "Saved" : "Paste client ID"}
+                          />
+                        </label>
+                        <label>
+                          Client secret
+                          <input
+                            type="password"
+                            value={integrationForms[integration.provider]?.client_secret ?? ""}
+                            onChange={(event) => updateIntegrationForm(integration.provider, "client_secret", event.target.value)}
+                            placeholder={integration.saved_settings.includes("client_secret") ? "Saved" : "Paste client secret"}
+                          />
+                        </label>
+                        <label>
+                          Redirect URI
+                          <input
+                            value={integrationForms[integration.provider]?.redirect_uri ?? ""}
+                            onChange={(event) => updateIntegrationForm(integration.provider, "redirect_uri", event.target.value)}
+                            placeholder={integration.saved_settings.includes("redirect_uri") ? "Saved or default" : "Optional override"}
+                          />
+                        </label>
+                        <label>
+                          Scopes
+                          <input
+                            value={integrationForms[integration.provider]?.scopes ?? ""}
+                            onChange={(event) => updateIntegrationForm(integration.provider, "scopes", event.target.value)}
+                            placeholder={integration.saved_settings.includes("scopes") ? "Saved or default" : "Optional override"}
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <label>
+                        Integration token
+                        <input
+                          type="password"
+                          value={integrationForms[integration.provider]?.integration_token ?? ""}
+                          onChange={(event) => updateIntegrationForm(integration.provider, "integration_token", event.target.value)}
+                          placeholder={integration.saved_settings.includes("integration_token") ? "Saved" : "Paste Medium token"}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  {integration.saved_settings.length > 0 ? (
+                    <div className="savedSettings">
+                      <span>Saved</span>
+                      {integration.saved_settings.map((setting) => (
+                        <small key={setting}>{setting}</small>
+                      ))}
+                    </div>
+                  ) : null}
                   {integration.missing_env.length > 0 ? (
                     <div className="missingEnv">
-                      <span>Required env</span>
-                      <code>{integration.missing_env.join(", ")}</code>
+                      <span>Required settings</span>
+                      <code>{(integration.required_settings ?? integration.missing_env).join(", ")}</code>
                     </div>
                   ) : null}
                   <div className="cardActions">
+                    <button className="secondaryButton" onClick={() => handleSaveIntegration(integration.provider)} disabled={busy}>
+                      <Check size={16} />
+                      Save settings
+                    </button>
                     <button className="primaryButton" onClick={() => handleConnectIntegration(integration.provider)} disabled={busy || !integration.configured}>
                       <Link2 size={16} />
-                      {integration.provider === "medium" ? "Use token" : "Connect"}
+                      {integration.provider === "medium" ? "Token saved" : "Connect"}
                     </button>
                     <a className="secondaryLink" href={integration.docs_url} target="_blank" rel="noreferrer">
                       <ExternalLink size={15} />
