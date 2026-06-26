@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db.session import get_db
-from app.models.domain import ApprovalRequest, ApprovalStatus, CollectedItem, ContentIdea, DailyReport, Source, WorkflowRun
+from app.models.domain import ApprovalRequest, ApprovalStatus, CollectedItem, ContentIdea, DailyReport, PerformanceMetric, PublishedPost, Source, WorkflowRun
 from app.schemas.domain import (
     ApprovalDecision,
     ApprovalRead,
@@ -13,6 +13,7 @@ from app.schemas.domain import (
     IntegrationConfigUpdate,
     IntegrationConnectRead,
     IntegrationRead,
+    PublishedPostRead,
     ReportRead,
     RunWorkflowRequest,
     SourceCreate,
@@ -21,6 +22,7 @@ from app.schemas.domain import (
 )
 from app.services.approval_service import ApprovalService
 from app.services.integration_service import IntegrationService
+from app.services.personal_content_service import PersonalContentService
 from app.llm.client import LLMClient
 from app.workflows.orchestrator import WorkflowOrchestrator
 
@@ -138,3 +140,39 @@ def list_reports(db: Session = Depends(get_db)) -> list[DailyReport]:
 @router.get("/ideas", response_model=list[ContentIdeaRead])
 def list_ideas(db: Session = Depends(get_db)) -> list[ContentIdea]:
     return list(db.scalars(select(ContentIdea).order_by(ContentIdea.created_at.desc()).limit(50)))
+
+
+def _post_with_latest_metric(post: PublishedPost, db: Session) -> dict:
+    metric = db.scalars(
+        select(PerformanceMetric)
+        .where(PerformanceMetric.post_id == post.id)
+        .order_by(PerformanceMetric.captured_at.desc())
+        .limit(1)
+    ).first()
+    return {
+        "id": post.id,
+        "platform": post.platform,
+        "title": post.title,
+        "url": post.url,
+        "content": post.content,
+        "published_at": post.published_at,
+        "topic_tags": post.topic_tags,
+        "latest_metric": metric,
+    }
+
+
+@router.post("/personal/linkedin/sample", response_model=list[PublishedPostRead])
+def seed_linkedin_history(db: Session = Depends(get_db)) -> list[dict]:
+    posts = PersonalContentService(db).seed_linkedin_history()
+    return [_post_with_latest_metric(post, db) for post in posts]
+
+
+@router.get("/personal/linkedin/top-posts", response_model=list[PublishedPostRead])
+def top_linkedin_posts(db: Session = Depends(get_db)) -> list[dict]:
+    posts = PersonalContentService(db).top_linkedin_posts(limit=10)
+    return [_post_with_latest_metric(post, db) for post in posts]
+
+
+@router.post("/personal/articles/propose", response_model=list[ContentIdeaRead])
+def propose_articles_from_history(db: Session = Depends(get_db)) -> list[ContentIdea]:
+    return PersonalContentService(db).propose_articles_from_history()

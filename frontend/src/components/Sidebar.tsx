@@ -35,6 +35,7 @@ export function Sidebar({ activeView, onNavigate }: Props) {
             className={activeView === item.id ? "navItem active" : "navItem"}
             type="button"
             onClick={() => onNavigate(item.id)}
+            aria-label={item.label}
             aria-current={activeView === item.id ? "page" : undefined}
           >
             <item.icon size={18} />

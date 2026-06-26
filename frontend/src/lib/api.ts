@@ -15,7 +15,9 @@ export type Idea = {
   idea_type: string;
   title: string;
   hook: string;
+  problem?: string | null;
   angle: string;
+  source_pattern?: string | null;
   hashtags: string[];
   status: string;
 };
@@ -73,6 +75,27 @@ export type IntegrationConfigPayload = {
   redirect_uri?: string;
   scopes?: string;
   integration_token?: string;
+};
+
+export type PerformanceMetric = {
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  views: number;
+  engagement_rate: number;
+  captured_at: string;
+};
+
+export type PublishedPost = {
+  id: string;
+  platform: string;
+  title: string;
+  url: string | null;
+  content: string;
+  published_at: string | null;
+  topic_tags: string[];
+  latest_metric: PerformanceMetric | null;
 };
 
 export async function getDashboard(): Promise<Dashboard> {
@@ -139,5 +162,23 @@ export async function saveIntegrationConfig(provider: string, payload: Integrati
     const errorPayload = await response.json().catch(() => ({ detail: "Unable to save integration settings" }));
     throw new Error(errorPayload.detail ?? "Unable to save integration settings");
   }
+  return response.json();
+}
+
+export async function seedLinkedInHistory(): Promise<PublishedPost[]> {
+  const response = await fetch(`${API_BASE}/personal/linkedin/sample`, { method: "POST" });
+  if (!response.ok) throw new Error("Unable to import LinkedIn history");
+  return response.json();
+}
+
+export async function getTopLinkedInPosts(): Promise<PublishedPost[]> {
+  const response = await fetch(`${API_BASE}/personal/linkedin/top-posts`);
+  if (!response.ok) throw new Error("Unable to load LinkedIn post history");
+  return response.json();
+}
+
+export async function proposeArticlesFromHistory(): Promise<Idea[]> {
+  const response = await fetch(`${API_BASE}/personal/articles/propose`, { method: "POST" });
+  if (!response.ok) throw new Error("Unable to generate article proposals");
   return response.json();
 }

@@ -61,6 +61,29 @@ class ContentIdeaRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PerformanceMetricRead(BaseModel):
+    likes: int
+    comments: int
+    shares: int
+    saves: int
+    views: int
+    engagement_rate: float
+    captured_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublishedPostRead(BaseModel):
+    id: str
+    platform: str
+    title: str
+    url: str | None
+    content: str
+    published_at: datetime | None
+    topic_tags: list[str]
+    latest_metric: PerformanceMetricRead | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReportRead(BaseModel):
     id: str
     title: str

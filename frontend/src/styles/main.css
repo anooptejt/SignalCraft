@@ -384,6 +384,89 @@ nav {
   padding: 4px 7px;
 }
 
+.personalContentPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.personalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.postRankList {
+  display: grid;
+  gap: 10px;
+}
+
+.postRankItem {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 160px;
+  gap: 14px;
+  align-items: start;
+  border: 1px solid #e5ebe8;
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 14px;
+}
+
+.rankNumber {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8f3f0;
+  color: #0f5f59;
+  font-weight: 760;
+}
+
+.postRankItem h4,
+.postRankItem p,
+.metricStack strong,
+.metricStack span,
+.metricStack small {
+  margin: 0;
+}
+
+.postRankItem h4 {
+  font-size: 15px;
+}
+
+.postRankItem p {
+  color: #56645f;
+  font-size: 14px;
+  line-height: 1.45;
+  margin-top: 5px;
+}
+
+.metricStack {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  text-align: right;
+}
+
+.metricStack strong {
+  color: #0f5f59;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.metricStack span {
+  color: #66736e;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.metricStack small {
+  color: #7a8580;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .tablePanel h3,
 .tablePanel p {
   margin: 0;
@@ -727,6 +810,16 @@ nav {
   .dataRow {
     grid-template-columns: 1fr;
     gap: 5px;
+  }
+
+  .postRankItem {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .metricStack {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
   }
 
   .topbar {

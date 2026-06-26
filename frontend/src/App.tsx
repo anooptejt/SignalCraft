@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  BarChart3,
   BellRing,
   Bot,
   Check,
@@ -25,13 +26,17 @@ import {
   Approval,
   Dashboard,
   Integration,
+  PublishedPost,
   decideApproval,
   generateSampleReport,
   getApprovals,
   getDashboard,
   getIntegrationConnectUrl,
   getIntegrations,
-  runDailyWorkflow
+  getTopLinkedInPosts,
+  proposeArticlesFromHistory,
+  runDailyWorkflow,
+  seedLinkedInHistory
 } from "./lib/api";
 import { fallbackApprovals, fallbackDashboard } from "./data/fallback";
 import "./styles/main.css";
@@ -40,7 +45,9 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard>(fallbackDashboard);
   const [approvals, setApprovals] = useState<Approval[]>(fallbackApprovals);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [topPosts, setTopPosts] = useState<PublishedPost[]>([]);
   const [integrationError, setIntegrationError] = useState<string | null>(null);
+  const [personalError, setPersonalError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<"live" | "offline">("offline");
   const [busy, setBusy] = useState(false);
   const [activeView, setActiveView] = useState<ViewId>("dashboard");
@@ -58,8 +65,19 @@ function App() {
     }
   }
 
+  async function refreshPersonalContent() {
+    try {
+      const posts = await getTopLinkedInPosts();
+      setTopPosts(posts);
+      setPersonalError(null);
+    } catch {
+      setTopPosts([]);
+    }
+  }
+
   useEffect(() => {
     refresh();
+    refreshPersonalContent();
   }, []);
 
   const pendingApprovals = useMemo(() => approvals.filter((approval) => approval.status === "pending"), [approvals]);
@@ -103,6 +121,33 @@ function App() {
       await refresh();
     } catch (error) {
       setIntegrationError(error instanceof Error ? error.message : "Unable to start connection");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSeedLinkedInHistory() {
+    setBusy(true);
+    setPersonalError(null);
+    try {
+      const posts = await seedLinkedInHistory();
+      setTopPosts(posts);
+      await refresh();
+    } catch (error) {
+      setPersonalError(error instanceof Error ? error.message : "Unable to import LinkedIn history");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleProposeArticles() {
+    setBusy(true);
+    setPersonalError(null);
+    try {
+      await proposeArticlesFromHistory();
+      await Promise.all([refresh(), refreshPersonalContent()]);
+    } catch (error) {
+      setPersonalError(error instanceof Error ? error.message : "Unable to generate article proposals");
     } finally {
       setBusy(false);
     }
@@ -191,6 +236,62 @@ function App() {
           </div>
         </div>
         <pre>{dashboard.latest_report?.markdown ?? "No report generated yet."}</pre>
+      </article>
+    );
+  }
+
+  function formatMetric(value?: number) {
+    return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value ?? 0);
+  }
+
+  function renderPersonalContentPanel() {
+    return (
+      <article className="panel personalContentPanel">
+        <div className="panelHeader">
+          <div>
+            <h3>LinkedIn Performance Intelligence</h3>
+            <p>Import your post history, rank what worked, then draft articles from your strongest patterns.</p>
+          </div>
+          <BarChart3 size={20} />
+        </div>
+        <div className="personalActions">
+          <button className="secondaryButton" onClick={handleSeedLinkedInHistory} disabled={busy}>
+            <Database size={17} />
+            Import sample history
+          </button>
+          <button className="primaryButton" onClick={handleProposeArticles} disabled={busy}>
+            <Sparkles size={17} />
+            Generate from best posts
+          </button>
+        </div>
+        {personalError ? <div className="inlineAlert">{personalError}</div> : null}
+        <div className="postRankList">
+          {topPosts.length === 0 ? (
+            <div className="emptyState">No LinkedIn history imported yet.</div>
+          ) : (
+            topPosts.slice(0, 5).map((post, index) => (
+              <div className="postRankItem" key={post.id}>
+                <span className="rankNumber">#{index + 1}</span>
+                <div>
+                  <h4>{post.title}</h4>
+                  <p>{post.content}</p>
+                  <div className="tagRow">
+                    {(post.topic_tags ?? []).map((tag) => (
+                      <small key={tag}>#{tag}</small>
+                    ))}
+                  </div>
+                </div>
+                <div className="metricStack">
+                  <strong>{formatMetric(post.latest_metric?.views)}</strong>
+                  <span>impressions</span>
+                  <small>
+                    {post.latest_metric?.likes ?? 0} likes · {post.latest_metric?.comments ?? 0} comments
+                  </small>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </article>
     );
   }
@@ -335,7 +436,12 @@ function App() {
     }
 
     if (activeView === "ideas") {
-      return <section className="singleColumn">{renderIdeasPanel()}</section>;
+      return (
+        <section className="singleColumn">
+          {renderPersonalContentPanel()}
+          {renderIdeasPanel()}
+        </section>
+      );
     }
 
     if (activeView === "calendar") {
