@@ -22,15 +22,31 @@ def test_integrations_report_missing_configuration():
 
         statuses = {item.provider: item for item in service.list_integrations()}
 
-        assert statuses["google"].configured is False
-        assert "client_id" in statuses["google"].missing_env
+        assert statuses["google"].configured is True
+        assert statuses["google"].label == "YouTube"
+        assert statuses["google"].status == "Ready for Google sign-in"
+        assert statuses["google"].missing_env == []
+        assert "Google/Gmail account" in " ".join(statuses["google"].guidance)
         assert "Analyze" in statuses["google"].access_modes
         assert statuses["google"].approval_actions == ["Publish or update public content"]
-        assert statuses["linkedin"].configured is False
-        assert "client_secret" in statuses["linkedin"].missing_env
-        assert "Scrape/import allowed content" in statuses["linkedin"].auto_actions
+        assert statuses["linkedin"].configured is True
+        assert statuses["linkedin"].missing_env == []
+        assert "Google/Gmail sign-in" in statuses["linkedin"].trust_boundary or "Google" in " ".join(statuses["linkedin"].guidance)
+        assert "Use allowed signed-in content for guided import" in statuses["linkedin"].auto_actions
         assert statuses["medium"].connected is False
         assert "Medium article draft ready" in statuses["medium"].notification_events
+
+
+def test_guided_login_marks_provider_connected():
+    with make_session() as db:
+        service = IntegrationService(db, Settings())
+
+        url = service.guided_login_url("medium")
+        status = service.mark_guided_connection_started("medium")
+
+        assert url == "https://medium.com/m/signin"
+        assert status.connected is True
+        assert status.status == "Guided sign-in started"
 
 
 def test_google_authorization_url_contains_youtube_scope():

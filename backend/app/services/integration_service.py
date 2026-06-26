@@ -28,6 +28,8 @@ class IntegrationStatus:
     approval_actions: list[str]
     notification_events: list[str]
     trust_boundary: str
+    login_url: str
+    guidance: list[str]
     docs_url: str
 
 
@@ -60,6 +62,32 @@ class IntegrationService:
             }
         )
         return f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
+
+    def guided_login_url(self, provider: str) -> str:
+        urls = {
+            "google": "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fwww.youtube.com%2F",
+            "linkedin": "https://www.linkedin.com/login",
+            "medium": "https://medium.com/m/signin",
+        }
+        if provider not in urls:
+            raise ValueError("Unsupported integration provider")
+        return urls[provider]
+
+    def mark_guided_connection_started(self, provider: str) -> IntegrationStatus:
+        if provider not in {"google", "linkedin", "medium"}:
+            raise ValueError("Unsupported integration provider")
+        if self.db is None:
+            raise ValueError("Database session is required to track integration connection")
+
+        config = self._config(provider) or IntegrationConnection(provider=provider)
+        if config.created_at is None:
+            config.created_at = datetime.utcnow()
+        config.connected = True
+        config.scopes = "guided_browser_login"
+        config.updated_at = datetime.utcnow()
+        self.db.merge(config)
+        self.db.commit()
+        return self._status(provider)
 
     def linkedin_authorization_url(self) -> str:
         config = self._config("linkedin")
@@ -117,68 +145,86 @@ class IntegrationService:
         return self._medium_status_from_config(config)
 
     def _google_status_from_config(self, config: IntegrationConnection | None) -> IntegrationStatus:
-        missing = self._missing("google", ["client_id", "client_secret"], config)
+        connected = bool(config and config.connected)
         return IntegrationStatus(
             provider="google",
-            label="Google / YouTube",
-            purpose="Analyze your YouTube channel, video metadata, comments, and performance signals for content ideas.",
-            connection_mode="OAuth 2.0",
-            configured=not missing,
-            connected=False,
-            status="Ready to connect" if not missing else "Add Google OAuth settings",
-            missing_env=missing,
-            required_settings=["client_id", "client_secret"],
+            label="YouTube",
+            purpose="Sign in to YouTube with your Google account, then SignalCraft can guide personal analysis and draft workflows.",
+            connection_mode="Google account sign-in",
+            configured=True,
+            connected=connected,
+            status="Guided sign-in started" if connected else "Ready for Google sign-in",
+            missing_env=[],
+            required_settings=[],
             saved_settings=self._saved_settings(config),
-            scopes=self._scopes("google", config).split(),
+            scopes=["YouTube account", "Guided import", "Personal analysis"],
             access_modes=["Analyze", "Draft", "Notify"],
-            auto_actions=["Read YouTube signals", "Collect metrics", "Generate draft ideas"],
+            auto_actions=["Open YouTube sign-in", "Use your signed-in account for guided import", "Generate draft ideas"],
             approval_actions=["Publish or update public content"],
             notification_events=["Draft report ready", "High-signal content pattern found"],
-            trust_boundary="SignalCraft can analyze and draft directly for personal use. It will not publish without approval.",
+            trust_boundary="You sign in the way you normally do with Google. SignalCraft drafts and analyzes, but it will not publish without approval.",
+            login_url=self.guided_login_url("google"),
+            guidance=[
+                "Click Connect account.",
+                "Choose your Google/Gmail account on the YouTube sign-in page.",
+                "Return to SignalCraft after sign-in to run analysis and draft generation.",
+            ],
             docs_url="https://developers.google.com/identity/protocols/oauth2/web-server",
         )
 
     def _linkedin_status_from_config(self, config: IntegrationConnection | None) -> IntegrationStatus:
-        missing = self._missing("linkedin", ["client_id", "client_secret"], config)
+        connected = bool(config and config.connected)
         return IntegrationStatus(
             provider="linkedin",
             label="LinkedIn",
-            purpose="Analyze your LinkedIn posts and engagement patterns when approved LinkedIn access is available.",
-            connection_mode="OAuth 2.0",
-            configured=not missing,
-            connected=False,
-            status="Ready to connect" if not missing else "Add LinkedIn app settings",
-            missing_env=missing,
-            required_settings=["client_id", "client_secret"],
+            purpose="Sign in to LinkedIn normally. If LinkedIn offers Google sign-in for your account, use that option there.",
+            connection_mode="Guided platform sign-in",
+            configured=True,
+            connected=connected,
+            status="Guided sign-in started" if connected else "Ready for LinkedIn sign-in",
+            missing_env=[],
+            required_settings=[],
             saved_settings=self._saved_settings(config),
-            scopes=self._scopes("linkedin", config).split(),
+            scopes=["LinkedIn account", "Guided import", "Personal analysis"],
             access_modes=["Analyze", "Draft", "Ask before publishing"],
-            auto_actions=["Read available post signals", "Scrape/import allowed content", "Generate LinkedIn drafts"],
+            auto_actions=["Open LinkedIn sign-in", "Use allowed signed-in content for guided import", "Generate LinkedIn drafts"],
             approval_actions=["Publish posts", "Comment", "Send messages"],
             notification_events=["LinkedIn draft ready", "Post pattern ready for review"],
-            trust_boundary="Personal analysis and drafts run without approvals. Anything that changes LinkedIn needs approval.",
+            trust_boundary="Google sign-in only logs you into LinkedIn. SignalCraft still treats LinkedIn as a separate guided account connection.",
+            login_url=self.guided_login_url("linkedin"),
+            guidance=[
+                "Click Connect account.",
+                "On LinkedIn, choose Google/Gmail sign-in if LinkedIn shows that option.",
+                "Return to SignalCraft after sign-in to import/analyze your own posts.",
+            ],
             docs_url="https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow",
         )
 
     def _medium_status_from_config(self, config: IntegrationConnection | None) -> IntegrationStatus:
-        missing = self._missing("medium", ["integration_token"], config)
+        connected = bool(config and config.connected)
         return IntegrationStatus(
             provider="medium",
             label="Medium",
-            purpose="Analyze your Medium stories and prepare article drafts from your content patterns.",
-            connection_mode="Integration token",
-            configured=not missing,
-            connected=bool(config and config.connected),
-            status="Token configured" if not missing else "Add Medium integration token",
-            missing_env=missing,
-            required_settings=["integration_token"],
+            purpose="Sign in to Medium normally. If Medium offers Google sign-in, use your Gmail account there.",
+            connection_mode="Guided platform sign-in",
+            configured=True,
+            connected=connected,
+            status="Guided sign-in started" if connected else "Ready for Medium sign-in",
+            missing_env=[],
+            required_settings=[],
             saved_settings=self._saved_settings(config),
-            scopes=["basicProfile", "listPublications", "publishPost"],
+            scopes=["Medium account", "Guided import", "Personal analysis"],
             access_modes=["Analyze", "Draft", "Ask before publishing"],
-            auto_actions=["Read profile/publication metadata", "Import article history", "Generate Medium drafts"],
+            auto_actions=["Open Medium sign-in", "Use allowed signed-in content for guided import", "Generate Medium drafts"],
             approval_actions=["Publish stories", "Update existing stories"],
             notification_events=["Medium article draft ready"],
-            trust_boundary="The token enables personal drafting workflows. Publishing still stays behind approval.",
+            trust_boundary="Google sign-in only logs you into Medium. SignalCraft uses the Medium account context separately for guided analysis.",
+            login_url=self.guided_login_url("medium"),
+            guidance=[
+                "Click Connect account.",
+                "On Medium, choose Google/Gmail sign-in if Medium shows that option.",
+                "Return to SignalCraft after sign-in to analyze your stories and drafts.",
+            ],
             docs_url="https://github.com/Medium/medium-api-docs",
         )
 

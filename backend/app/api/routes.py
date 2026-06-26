@@ -80,18 +80,12 @@ def save_integration_config(provider: str, payload: IntegrationConfigUpdate, db:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.get("/integrations/google/connect", response_model=IntegrationConnectRead)
-def connect_google(db: Session = Depends(get_db)) -> dict[str, str]:
+@router.get("/integrations/{provider}/connect", response_model=IntegrationConnectRead)
+def connect_integration(provider: str, db: Session = Depends(get_db)) -> dict[str, str]:
     try:
-        return {"provider": "google", "authorization_url": IntegrationService(db).google_authorization_url()}
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.get("/integrations/linkedin/connect", response_model=IntegrationConnectRead)
-def connect_linkedin(db: Session = Depends(get_db)) -> dict[str, str]:
-    try:
-        return {"provider": "linkedin", "authorization_url": IntegrationService(db).linkedin_authorization_url()}
+        service = IntegrationService(db)
+        service.mark_guided_connection_started(provider)
+        return {"provider": provider, "authorization_url": service.guided_login_url(provider), "mode": "guided_login"}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -101,6 +101,8 @@ class IntegrationRead(BaseModel):
     approval_actions: list[str]
     notification_events: list[str]
     trust_boundary: str
+    login_url: str
+    guidance: list[str]
     docs_url: str
 
 
@@ -115,6 +117,7 @@ class IntegrationConfigUpdate(BaseModel):
 class IntegrationConnectRead(BaseModel):
     provider: str
     authorization_url: str
+    mode: str = "guided_login"
 
 
 class IntegrationCallbackRead(BaseModel):

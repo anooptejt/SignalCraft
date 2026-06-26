@@ -62,6 +62,8 @@ export type Integration = {
   approval_actions: string[];
   notification_events: string[];
   trust_boundary: string;
+  login_url: string;
+  guidance: string[];
   docs_url: string;
 };
 
@@ -117,7 +119,7 @@ export async function getIntegrations(): Promise<Integration[]> {
   return response.json();
 }
 
-export async function getIntegrationConnectUrl(provider: "google" | "linkedin"): Promise<string> {
+export async function getIntegrationConnectUrl(provider: string): Promise<string> {
   const response = await fetch(`${API_BASE}/integrations/${provider}/connect`);
   if (!response.ok) {
     const payload = await response.json().catch(() => ({ detail: "Unable to start connection" }));

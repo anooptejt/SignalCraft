@@ -153,11 +153,11 @@ For local parity with EFD, copy the LLM-related values from `Engineer-frontdoor/
 
 The Settings page includes UI connection cards for:
 
-- Google / YouTube via OAuth 2.0 with `https://www.googleapis.com/auth/youtube.readonly`.
-- LinkedIn via OAuth 2.0. LinkedIn post access depends on the products and scopes approved for your LinkedIn app.
-- Medium via an integration token.
+- YouTube via normal Google/Gmail sign-in.
+- LinkedIn via normal LinkedIn sign-in. If LinkedIn offers Google/Gmail sign-in for your account, use it there.
+- Medium via normal Medium sign-in. If Medium offers Google/Gmail sign-in for your account, use it there.
 
-Open Settings in the UI and save the connection settings directly on each integration card. SignalCraft stores those settings in the local database and never returns saved secrets back to the browser. `.env` values are only optional fallback defaults for local development.
+Open Settings in the UI and click `Connect account` on each integration card. SignalCraft opens the platform sign-in page and tracks the connection as a guided personal import path. No client IDs, client secrets, Medium tokens, or `.env` edits are required for this guided flow.
 
 For personal use, the default trust model is:
 
